@@ -8,6 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+console.log('KEY CHECK:', ANTHROPIC_API_KEY ? 'Key found' : 'Key is MISSING');
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 
 app.get('/', (req, res) => {
