@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>howdo.ai — Step-by-step, powered by AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --accent: #4fffb0;
+    --accent2: #7c6fff;
+    --text: #f0f0f5;
+    --muted: #7a7a99;
+    --border: rgba(255,255,255,0.07);
+    --glow: 0 0 60px rgba(79,255,176,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND MESH */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 10%, rgba(79,255,176,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(124,111,255,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .logo span { color: var(--accent); }
+
+  nav ul {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  nav ul a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  nav ul a:hover { color: var(--text); }
+
+  .nav-cta {
+    background: var(--accent);
+    color: #000 !important;
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-weight: 500 !important;
+    transition: opacity 0.2s !important;
+  }
+
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 100px 24px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(79,255,176,0.08);
+    border: 1px solid rgba(79,255,176,0.2);
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.8rem, 7vw, 5.2rem);
+    line-height: 1.0;
+    letter-spacing: -0.04em;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--accent);
+    position: relative;
+  }
+
+  .subhead {
+    color: var(--muted);
+    font-size: 1.15rem;
+    line-height: 1.6;
+    max-width: 540px;
+    margin: 0 auto 48px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* SEARCH BAR */
+  .search-wrap {
+    position: relative;
+    max-width: 640px;
+    margin: 0 auto 16px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .search-bar {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 18px 140px 18px 56px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 1rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-bar::placeholder { color: var(--muted); }
+
+  .search-bar:focus {
+    border-color: rgba(79,255,176,0.4);
+    box-shadow: 0 0 0 3px rgba(79,255,176,0.06);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 1.1rem;
+    pointer-events: none;
+  }
+
+  .search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+
+  .search-btn:hover { opacity: 0.85; transform: translateY(-50%) scale(1.02); }
+
+  .search-hints {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .hint {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 5px 12px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .hint:hover {
+    border-color: rgba(79,255,176,0.3);
+    color: var(--accent);
+    background: rgba(79,255,176,0.05);
+  }
+
+  /* AD BANNER PLACEHOLDER */
+  .ad-banner {
+    max-width: 728px;
+    margin: 48px auto 0;
+    background: var(--surface);
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+
+  .ad-banner-inner {
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* HOW IT WORKS */
+  .section {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 100px 24px;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.03em;
+    margin-bottom: 64px;
+    max-width: 520px;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2px;
+  }
+
+  .step {
+    background: var(--surface);
+    padding: 36px 32px;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .step:first-child { border-radius: 16px 0 0 16px; }
+  .step:last-child { border-radius: 0 16px 16px 0; }
+
+  .step:hover { background: var(--surface2); }
+
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: rgba(79,255,176,0.12);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .step-icon {
+    font-size: 1.8rem;
+    margin-bottom: 16px;
+  }
+
+  .step h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    letter-spacing: -0.02em;
+  }
+
+  .step p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  /* VIDEO PREVIEW */
+  .video-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    max-width: 780px;
+    margin: 0 auto;
+    box-shadow: var(--glow);
+  }
+
+  .video-topbar {
+    background: var(--surface2);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dots { display: flex; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+
+  .video-title-bar {
+    flex: 1;
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .video-body {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    min-height: 380px;
+  }
+
+  .video-player {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .video-player::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(79,255,176,0.05) 0%, transparent 70%);
+  }
+
+  .play-btn {
+    width: 64px; height: 64px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    z-index: 1;
+  }
+
+  .play-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    transform: scale(1.08);
+  }
+
+  .avatar-label {
+    color: var(--muted);
+    font-size: 0.8rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Mid-roll ad overlay simulation */
+  .mid-ad {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+    z-index: 2;
+  }
+
+  .ad-skip {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+
+  .video-sidebar {
+    border-left: 1px solid var(--border);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sidebar-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .step-item:hover { background: rgba(255,255,255,0.04); }
+  .step-item.active { background: rgba(79,255,176,0.08); }
+
+  .step-num-sm {
+    width: 22px; height: 22px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .step-num-sm.done {
+    background: var(--surface2);
+    color: var(--muted);
+  }
+
+  .step-text {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .step-item.active .step-text { color: var(--text); }
+
+  /* DISCLAIMER SECTION */
+  .disclaimer-section {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 24px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .disclaimer-box {
+    max-width: 680px;
+    margin: 0 auto;
+    background: rgba(255, 200, 50, 0.05);
+    border: 1px solid rgba(255, 200, 50, 0.2);
+    border-radius: 12px;
+    padding: 28px 32px;
+  }
+
+  .disclaimer-icon { font-size: 1.8rem; margin-bottom: 12px; }
+
+  .disclaimer-box h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: rgba(255, 200, 50, 0.9);
+    margin-bottom: 12px;
+  }
+
+  .disclaimer-box p {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+
+  /* SIGNUP */
+  .signup-section {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 80px 24px 100px;
+    text-align: center;
+  }
+
+  .signup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 48px 40px;
+    box-shadow: var(--glow);
+  }
+
+  .signup-card h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+
+  .signup-card p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .input-field {
+    background: var(--bg);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .input-field::placeholder { color: var(--muted); }
+  .input-field:focus { border-color: rgba(79,255,176,0.4); }
+
+  .cta-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 15px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    margin-bottom: 20px;
+  }
+
+  .cta-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+  }
+
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .social-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 13px;
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .social-btn:hover { background: var(--surface2); }
+
+  .legal-note {
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 16px;
+  }
+
+  .legal-note a { color: var(--accent); text-decoration: none; }
+
+  /* PRICING */
+  .pricing {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .plan {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px 28px;
+    transition: border-color 0.2s;
+  }
+
+  .plan.featured {
+    border-color: rgba(79,255,176,0.4);
+    background: rgba(79,255,176,0.04);
+  }
+
+  .plan-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-bottom: 16px;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .plan-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .plan-price {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    margin-bottom: 4px;
+  }
+
+  .plan-price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .plan-desc {
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .plan-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .plan-features li {
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .plan-features li::before {
+    content: '✓';
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 48px 40px 32px;
+    text-align: center;
+  }
+
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+
+  .footer-logo span { color: var(--accent); }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+
+  .footer-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--text); }
+
+  .footer-disclaimer {
+    max-width: 700px;
+    margin: 0 auto 24px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.7;
+  }
+
+  .footer-copy {
+    color: rgba(255,255,255,0.2);
+    font-size: 0.75rem;
+  }
+
+  /* SCROLL ANIMATIONS */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (max-width: 680px) {
+    nav ul { display: none; }
+    nav { padding: 14px 20px; }
+    .video-body { grid-template-columns: 1fr; }
+    .video-sidebar { display: none; }
+    .pricing { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; gap: 2px; }
+    .step:first-child { border-radius: 16px 16px 0 0; }
+    .step:last-child { border-radius: 0 0 16px 16px; }
+    .signup-card { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">howdo<span>.ai</span></div>
+  <ul>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#signup">Sign in</a></li>
+    <li><a href="#signup" class="nav-cta">Get started free</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge">AI-powered how-to videos</div>
+  <h1>Learn how to do <em>anything</em>, instantly.</h1>
+  <p class="subhead">Type what you want to learn. howdo.ai searches the web and generates a personalized step-by-step AI video — just for you.</p>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-bar" type="text" placeholder="How do I change a flat tire?" id="searchInput" />
+    <button class="search-btn" onclick="handleSearch()">Generate Video</button>
+  </div>
+
+  <div class="search-hints">
+    <span class="hint" onclick="fillSearch('Open a Roth IRA')">Open a Roth IRA</span>
+    <span class="hint" onclick="fillSearch('Change a flat tire')">Change a flat tire</span>
+    <span class="hint" onclick="fillSearch('Make pasta from scratch')">Make pasta from scratch</span>
+    <span class="hint" onclick="fillSearch('File my taxes')">File my taxes</span>
+    <span class="hint" onclick="fillSearch('Fix a leaky faucet')">Fix a leaky faucet</span>
+  </div>
+
+  <!-- AD BANNER -->
+  <div class="ad-banner">
+    <div class="ad-banner-inner">
+      <span>Advertisement — 728×90</span>
+    </div>
+    <span>Ad</span>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-label reveal">The process</div>
+  <h2 class="section-title reveal">Three steps. Any task. Zero confusion.</h2>
+  <div class="steps reveal">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">🔎</div>
+      <h3>Ask anything</h3>
+      <p>Type your question in plain English. From replacing a fuse to writing a will — no topic is too simple or complex.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">🌐</div>
+      <h3>We research it</h3>
+      <p>Our AI searches the web in real time, finds authoritative sources, and builds a clear, accurate step-by-step script.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">🎬</div>
+      <h3>Watch your video</h3>
+      <p>An AI presenter walks you through every step on screen. Pause, rewind, and follow along at your own pace.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-icon">✅</div>
+      <h3>Get it done</h3>
+      <p>Follow the steps with confidence. Each video is tailored to your exact question — not a generic tutorial.</p>
+    </div>
+  </div>
+</section>
+
+<!-- VIDEO PREVIEW -->
+<div class="section" style="padding-top:0">
+  <div class="video-preview reveal">
+    <div class="video-topbar">
+      <div class="dots">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+      </div>
+      <div class="video-title-bar">howdo.ai — "How do I change a flat tire?"</div>
+    </div>
+    <div class="video-body">
+      <div class="video-player">
+        <div class="play-btn" onclick="this.innerHTML='⏸'">▶</div>
+        <div class="avatar-label">AI Presenter — Alex</div>
+        <div class="mid-ad">
+          <span>📢 Your ad here — Mid-roll placement</span>
+          <button class="ad-skip">Skip Ad ›</button>
+        </div>
+      </div>
+      <div class="video-sidebar">
+        <div class="sidebar-title">Steps</div>
+        <div class="step-item">
+          <div class="step-num-sm done">✓</div>
+          <div class="step-text">Pull over safely and turn on hazard lights</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-sm done">✓</div>
+          <div class="step-text">Locate the spare tire and jack in your trunk</div>
+        </div>
+        <div class="step-item active">
+          <div class="step-num-sm">3</div>
+          <div class="step-text">Loosen lug nuts before jacking up the car</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-sm" style="background:var(--surface2);color:var(--muted)">4</div>
+          <div class="step-text">Jack the vehicle up 6 inches off the ground</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-sm" style="background:var(--surface2);color:var(--muted)">5</div>
+          <div class="step-text">Remove flat tire, mount spare</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-sm" style="background:var(--surface2);color:var(--muted)">6</div>
+          <div class="step-text">Lower jack, tighten lug nuts in star pattern</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer-section">
+  <div class="disclaimer-box reveal">
+    <div class="disclaimer-icon">⚠️</div>
+    <h3>Important Safety Disclaimer</h3>
+    <p>howdo.ai provides general informational content only. Videos are AI-generated and intended as educational guidance, not professional advice. Always consult a licensed professional before performing medical, legal, financial, electrical, or structural tasks. howdo.ai and its affiliates are not liable for any injury, damage, property loss, or financial harm resulting from following instructions in these videos. By watching, you acknowledge that you proceed at your own risk.</p>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="section-label reveal">Pricing</div>
+  <h2 class="section-title reveal">Start free. Go further with Pro.</h2>
+  <div class="pricing reveal">
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0 <span>/mo</span></div>
+      <div class="plan-desc">Perfect for occasional learners.</div>
+      <ul class="plan-features">
+        <li>3 AI videos per day</li>
+        <li>Web search-powered research</li>
+        <li>Standard AI presenter</li>
+        <li>Ad-supported</li>
+        <li>720p video quality</li>
+      </ul>
+    </div>
+    <div class="plan featured">
+      <div class="plan-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$9.99 <span>/mo</span></div>
+      <div class="plan-desc">For people who want to learn without limits.</div>
+      <ul class="plan-features">
+        <li>Unlimited AI videos</li>
+        <li>No ads, ever</li>
+        <li>Priority video generation</li>
+        <li>Choose your AI presenter</li>
+        <li>1080p HD video quality</li>
+        <li>Download videos</li>
+        <li>Video history & bookmarks</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SIGNUP -->
+<section class="signup-section" id="signup">
+  <div class="signup-card reveal">
+    <h2>Start learning today</h2>
+    <p>Create your free account and get 3 AI videos every day, no credit card required.</p>
+    <div class="input-group">
+      <input class="input-field" type="text" placeholder="Full name" />
+      <input class="input-field" type="email" placeholder="Email address" />
+      <input class="input-field" type="password" placeholder="Create a password" />
+    </div>
+    <button class="cta-btn">Create Free Account →</button>
+    <div class="divider">or continue with</div>
+    <button class="social-btn">🍎 Continue with Apple</button>
+    <button class="social-btn">🔵 Continue with Google</button>
+    <div class="legal-note">
+      By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>, and acknowledge the <a href="#">Content Disclaimer</a>. howdo.ai is not liable for outcomes resulting from following AI-generated instructions.
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">howdo<span>.ai</span></div>
+  <div class="footer-links">
+    <a href="#">Terms of Service</a>
+    <a href="#">Privacy Policy</a>
+    <a href="#">Content Disclaimer</a>
+    <a href="#">Advertise</a>
+    <a href="#">Contact</a>
+    <a href="#">Blog</a>
+  </div>
+  <div class="footer-disclaimer">
+    howdo.ai provides AI-generated informational content for educational purposes only. Content should not be construed as professional medical, legal, financial, or safety advice. Always consult a licensed professional before undertaking any task that could result in personal injury, property damage, or financial loss. howdo.ai, its officers, employees, and affiliates expressly disclaim all liability for any damages arising from reliance on content provided on this platform.
+  </div>
+  <div class="footer-copy">© 2026 howdo.ai — All rights reserved.</div>
+</footer>
+
+<script>
+  // Search hint autofill
+  function fillSearch(text) {
+    document.getElementById('searchInput').value = text;
+    document.getElementById('searchInput').focus();
+  }
+
+  function handleSearch() {
+    const val = document.getElementById('searchInput').value.trim();
+    if (!val) return;
+    alert('🎬 Generating your video for: "' + val + '"\n\nIn the real app, this would search the web and produce an AI video in ~60 seconds.');
+  }
+
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleSearch();
+  });
+
+  // Scroll reveals
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 60);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
