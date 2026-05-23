@@ -66,7 +66,35 @@ app.post('/generate', async (req, res) => {
     );
 
     const videoId = videoResponse.data.data.video_id;
-    res.json({ success: true, videoId, script });
+
+    // Step 3: Poll for video completion
+    let videoUrl = null;
+    for (let i = 0; i < 24; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      
+      const statusResponse = await axios.get(
+        `https://api.heygen.com/v1/video_status.get?video_id=${videoId}`,
+        {
+          headers: { 'X-Api-Key': HEYGEN_API_KEY }
+        }
+      );
+
+      const status = statusResponse.data.data.status;
+      console.log('Video status:', status);
+
+      if (status === 'completed') {
+        videoUrl = statusResponse.data.data.video_url;
+        break;
+      } else if (status === 'failed') {
+        throw new Error('Video generation failed');
+      }
+    }
+
+    if (!videoUrl) {
+      return res.status(500).json({ success: false, error: 'Video took too long to generate' });
+    }
+
+    res.json({ success: true, videoUrl, script });
 
   } catch (error) {
     console.error(error.response?.data || error.message);
