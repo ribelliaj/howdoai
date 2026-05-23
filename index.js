@@ -46,7 +46,7 @@ app.post('/generate', async (req, res) => {
         video_inputs: [{
           character: {
   type: 'talking_photo',
-  talking_photo_id: '0f32e8513d3248849aacc33958442d6d',
+  talking_photo_id: '2411df8bdb0d40b088aa453d4c2a2d20',
 },
           voice: {
             type: 'text',
