@@ -7,7 +7,6 @@ app.use(cors());
 app.use(express.json());
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-console.log('ALL ENV VARS:', JSON.stringify(process.env));
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 
 app.get('/', (req, res) => {
