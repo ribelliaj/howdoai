@@ -45,10 +45,9 @@ app.post('/generate', async (req, res) => {
       {
         video_inputs: [{
           character: {
-            type: 'avatar',
-            avatar_id: 'e0e84faea390465896db75a83be45085',
-            avatar_style: 'normal'
-          },
+  type: 'talking_photo',
+  talking_photo_id: '0f32e8513d3248849aacc33958442d6d',
+},
           voice: {
             type: 'text',
             input_text: script,
