@@ -68,7 +68,7 @@ app.post('/generate', async (req, res) => {
 
     // Step 3: Poll for video completion
     let videoUrl = null;
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 60; i++) {
       await new Promise(r => setTimeout(r, 5000));
       
       const statusResponse = await axios.get(
