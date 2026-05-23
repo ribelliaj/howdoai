@@ -54,7 +54,8 @@ app.post('/generate', async (req, res) => {
             voice_id: '2d5b0e6cf36f460aa7fc47e3eee4ba54'
           }
         }],
-        dimension: { width: 1280, height: 720 }
+        dimension: { width: 1280, height: 720 },
+test: false
       },
       {
         headers: {
