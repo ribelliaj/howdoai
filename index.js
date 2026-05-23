@@ -46,7 +46,7 @@ app.post('/generate', async (req, res) => {
         video_inputs: [{
           character: {
             type: 'avatar',
-            avatar_id: 'Daisy-inskirt-20220818',
+            avatar_id: 'e0e84faea390465896db75a83be45085',
             avatar_style: 'normal'
           },
           voice: {
