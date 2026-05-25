@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>howdo.ai — Generating your video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --accent: #4fffb0;
+    --accent2: #7c6fff;
+    --text: #f0f0f5;
+    --muted: #7a7a99;
+    --border: rgba(255,255,255,0.07);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 10%, rgba(79,255,176,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(124,111,255,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .nav-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    max-width: 500px;
+    margin: 0 40px;
+  }
+
+  .nav-search input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    outline: none;
+  }
+
+  .nav-search input:focus { border-color: rgba(79,255,176,0.4); }
+
+  .nav-search button {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .main {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+
+  .question-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .question-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    letter-spacing: -0.03em;
+    margin-bottom: 48px;
+    line-height: 1.15;
+  }
+
+  /* AD BANNER */
+  .ad-top {
+    background: var(--surface);
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 12px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+
+  /* VIDEO BOX */
+  .video-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    margin-bottom: 40px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .video-box-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .video-box-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.5s infinite;
+  }
+
+  .status-dot.done { animation: none; background: var(--accent); }
+  .status-dot.error { animation: none; background: #ff5f57; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.6); }
+  }
+
+  .status-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .video-box-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 48px 24px;
+    gap: 28px;
+  }
+
+  /* LOADING STATE */
+  .loader-ring {
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgba(79,255,176,0.1);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loader-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .loader-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .loader-step.active {
+    border: 1px solid rgba(79,255,176,0.2);
+    color: var(--text);
+  }
+
+  .loader-step.complete {
+    color: var(--accent);
+  }
+
+  .step-icon {
+    font-size: 1rem;
+    width: 24px;
+    text-align: center;
+  }
+
+  .step-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(79,255,176,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .loader-time {
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  /* VIDEO STATE */
+  #videoPlayer {
+    width: 100%;
+    border-radius: 0;
+    display: none;
+    background: #000;
+    max-height: 560px;
+  }
+
+  /* ERROR STATE */
+  .error-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .error-icon { font-size: 2.5rem; }
+
+  .error-state p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 340px;
+    line-height: 1.6;
+  }
+
+  .retry-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  /* MID AD */
+  .ad-mid {
+    background: var(--surface2);
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 12px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+
+  /* DISCLAIMER */
+  .disclaimer {
+    background: rgba(255,200,50,0.04);
+    border: 1px solid rgba(255,200,50,0.15);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+
+  .disclaimer strong {
+    color: rgba(255,200,50,0.8);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 100px;
+    height: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 100px;
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 14px 20px; }
+    .nav-search { margin: 0 16px; }
+    .main { padding: 40px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">howdo<span>.ai</span></a>
+  <div class="nav-search">
+    <input type="text" id="navSearch" placeholder="Ask something else..." />
+    <button onclick="newSearch()">Search</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="question-label">Your question</div>
+  <h1 class="question-title" id="questionTitle">Loading...</h1>
+
+  <!-- TOP AD -->
+  <div class="ad-top">Advertisement — 728×90</div>
+
+  <!-- VIDEO BOX -->
+  <div class="video-box">
+    <div class="video-box-header">
+      <div class="video-box-header-left">
+        <div class="status-dot" id="statusDot"></div>
+        <div class="status-text" id="statusText">Generating your video...</div>
+      </div>
+    </div>
+
+    <div class="video-box-body" id="loadingState">
+      <div class="loader-ring" id="loaderRing"></div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="loader-steps">
+        <div class="loader-step active" id="step1">
+          <div class="step-spinner" id="step1Spinner"></div>
+          <span>Searching the web for instructions...</span>
+        </div>
+        <div class="loader-step" id="step2">
+          <div class="step-icon">📝</div>
+          <span>Writing your step-by-step script...</span>
+        </div>
+        <div class="loader-step" id="step3">
+          <div class="step-icon">🎬</div>
+          <span>Generating AI presenter video...</span>
+        </div>
+        <div class="loader-step" id="step4">
+          <div class="step-icon">✨</div>
+          <span>Finalizing and delivering your video...</span>
+        </div>
+      </div>
+
+      <div class="loader-time" id="loaderTime">This usually takes 2–3 minutes</div>
+    </div>
+
+    <video id="videoPlayer" controls></video>
+
+    <div class="video-box-body error-state" id="errorState">
+      <div class="error-icon">⚠️</div>
+      <p>Something went wrong generating your video. Please try again.</p>
+      <button class="retry-btn" onclick="retrySearch()">Try Again</button>
+    </div>
+  </div>
+
+  <!-- MID AD -->
+  <div class="ad-mid">Advertisement — 728×90</div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <strong>⚠️ Important Disclaimer</strong>
+    howdo.ai provides AI-generated informational content for educational purposes only. Always consult a licensed professional before performing medical, legal, financial, electrical, or structural tasks. howdo.ai is not liable for any injury, damage, or loss resulting from following these instructions. By watching, you agree to our Terms of Service.
+  </div>
+
+</div>
+
+<script>
+  const BACKEND = 'https://howdoai-production.up.railway.app';
+
+  // Get question from URL
+  const params = new URLSearchParams(window.location.search);
+  const question = params.get('q') || 'How do I do this?';
+
+  document.getElementById('questionTitle').textContent = question;
+  document.getElementById('navSearch').value = question;
+  document.title = `howdo.ai — ${question}`;
+
+  function newSearch() {
+    const val = document.getElementById('navSearch').value.trim();
+    if (!val) return;
+    window.location.href = `video.html?q=${encodeURIComponent(val)}`;
+  }
+
+  document.getElementById('navSearch').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') newSearch();
+  });
+
+  function retrySearch() {
+    window.location.reload();
+  }
+
+  // Progress simulation
+  let progress = 0;
+  let currentStep = 1;
+
+  function updateProgress(pct, step) {
+    document.getElementById('progressBar').style.width = pct + '%';
+    
+    if (step > currentStep) {
+      // Complete previous step
+      const prev = document.getElementById('step' + currentStep);
+      prev.classList.remove('active');
+      prev.classList.add('complete');
+      prev.querySelector('.step-spinner, .step-icon').outerHTML = '<div class="step-icon">✅</div>';
+
+      // Activate new step
+      currentStep = step;
+      const curr = document.getElementById('step' + currentStep);
+      curr.classList.add('active');
+      const icon = curr.querySelector('.step-icon');
+      if (icon) icon.outerHTML = '<div class="step-spinner"></div>';
+    }
+  }
+
+  function showVideo(url) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('loaderRing').style.display = 'none';
+
+    const player = document.getElementById('videoPlayer');
+    player.style.display = 'block';
+    player.src = url;
+    player.play();
+
+    document.getElementById('statusDot').classList.add('done');
+    document.getElementById('statusText').textContent = 'Your video is ready!';
+  }
+
+  function showError() {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'flex';
+    document.getElementById('statusDot').classList.add('error');
+    document.getElementById('statusText').textContent = 'Generation failed';
+  }
+
+  // Start generation
+  async function generate() {
+    updateProgress(10, 1);
+
+    // Simulate step progression while waiting
+    setTimeout(() => updateProgress(30, 2), 8000);
+    setTimeout(() => updateProgress(55, 3), 20000);
+    setTimeout(() => updateProgress(80, 4), 90000);
+
+    try {
+      const response = await fetch(`${BACKEND}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.videoUrl) {
+        updateProgress(100, 4);
+        setTimeout(() => showVideo(data.videoUrl), 500);
+      } else {
+        showError();
+      }
+    } catch (err) {
+      showError();
+    }
+  }
+
+  generate();
+</script>
+</body>
+</html>

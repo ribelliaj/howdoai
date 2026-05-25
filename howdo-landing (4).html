@@ -1065,51 +1065,10 @@
     document.getElementById('searchInput').focus();
   }
 
-  async function handleSearch() {
+  function handleSearch() {
     const val = document.getElementById('searchInput').value.trim();
     if (!val) return;
-
-    const btn = document.querySelector('.search-btn');
-    btn.textContent = 'Generating...';
-    btn.disabled = true;
-
-    document.getElementById('videoModal').style.display = 'flex';
-    document.getElementById('modalLoading').style.display = 'flex';
-    document.getElementById('modalVideo').style.display = 'none';
-    document.getElementById('modalTitle').textContent = val;
-
-    try {
-      const response = await fetch('https://howdoai-production.up.railway.app/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: val })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        document.getElementById('modalLoading').style.display = 'none';
-        document.getElementById('modalVideo').style.display = 'block';
-        document.getElementById('modalVideo').src = data.videoUrl;
-        document.getElementById('modalVideo').play();
-      } else {
-        closeModal();
-        alert('Something went wrong. Please try again.');
-      }
-    } catch (error) {
-      closeModal();
-      alert('Could not connect to server. Please try again.');
-    } finally {
-      btn.textContent = 'Generate Video';
-      btn.disabled = false;
-    }
-  }
-
-  function closeModal() {
-    document.getElementById('videoModal').style.display = 'none';
-    const v = document.getElementById('modalVideo');
-    v.pause();
-    v.src = '';
+    window.location.href = 'video.html?q=' + encodeURIComponent(val);
   }
 
   document.getElementById('searchInput').addEventListener('keydown', function(e) {
