@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+const HIGGSFIELD_API_KEY = process.env.HIGGSFIELD_API_KEY;
 
 app.get('/', (req, res) => {
   res.send('howdo.ai API is running!');
@@ -17,15 +17,24 @@ app.post('/generate', async (req, res) => {
   const { question } = req.body;
 
   try {
-    // Step 1: Generate script with Claude
+    // Step 1: Generate script split into steps using Claude
+    console.log('Step 1: Generating script for:', question);
     const scriptResponse = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 1500,
         messages: [{
           role: 'user',
-          content: `You are a helpful instructor. Create a clear, friendly, step-by-step script for an AI video presenter explaining: "${question}". Write it as if speaking directly to the viewer. Keep it under 300 words. Just write the script, no extra commentary.`
+          content: `You are a helpful instructor. For the question "${question}", create a step-by-step instructional guide with exactly 4 steps. 
+
+Return ONLY a JSON array with no extra text, no markdown, no backticks. Format exactly like this:
+[
+  {"step": 1, "title": "Step title", "description": "One sentence description", "visual": "Detailed cinematic description of what this step looks like visually for a video scene"},
+  {"step": 2, "title": "Step title", "description": "One sentence description", "visual": "Detailed cinematic description of what this step looks like visually for a video scene"},
+  {"step": 3, "title": "Step title", "description": "One sentence description", "visual": "Detailed cinematic description of what this step looks like visually for a video scene"},
+  {"step": 4, "title": "Step title", "description": "One sentence description", "visual": "Detailed cinematic description of what this step looks like visually for a video scene"}
+]`
         }]
       },
       {
@@ -37,68 +46,70 @@ app.post('/generate', async (req, res) => {
       }
     );
 
-    const script = scriptResponse.data.content[0].text;
+    const rawText = scriptResponse.data.content[0].text.trim();
+    const steps = JSON.parse(rawText);
+    console.log('Steps generated:', steps.length);
 
-    // Step 2: Send script to HeyGen
-    const videoResponse = await axios.post(
-      'https://api.heygen.com/v2/video/generate',
-      {
-        video_inputs: [{
-          character: {
-  type: 'talking_photo',
-  talking_photo_id: '2411df8bdb0d40b088aa453d4c2a2d20',
-},
-          voice: {
-            type: 'text',
-            input_text: script,
-            voice_id: '2d5b0e6cf36f460aa7fc47e3eee4ba54'
-          }
-        }],
-        dimension: { width: 1280, height: 720 },
-test: false
-      },
-      {
-        headers: {
-          'X-Api-Key': HEYGEN_API_KEY,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    // Step 2: Generate a video for each step using Higgsfield
+    console.log('Step 2: Generating videos for each step...');
+    const videoUrls = [];
 
-    const videoId = videoResponse.data.data.video_id;
+    for (const step of steps) {
+      console.log(`Generating video for step ${step.step}: ${step.title}`);
 
-    // Step 3: Poll for video completion
-    let videoUrl = null;
-    for (let i = 0; i < 60; i++) {
-      await new Promise(r => setTimeout(r, 5000));
-      
-      const statusResponse = await axios.get(
-        `https://api.heygen.com/v1/video_status.get?video_id=${videoId}`,
+      const videoResponse = await axios.post(
+        'https://api.cloud.higgsfield.ai/v1/video/text-to-video',
         {
-          headers: { 'X-Api-Key': HEYGEN_API_KEY }
+          prompt: `${step.visual}. Cinematic, high quality, instructional style, clear and well-lit.`,
+          duration: 4,
+          aspect_ratio: '16:9'
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${HIGGSFIELD_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
 
-      const status = statusResponse.data.data.status;
-      console.log('Video status:', status);
+      const jobId = videoResponse.data.id || videoResponse.data.job_id;
+      console.log(`Job ID for step ${step.step}:`, jobId);
 
-      if (status === 'completed') {
-        videoUrl = statusResponse.data.data.video_url;
-        break;
-      } else if (status === 'failed') {
-        throw new Error('Video generation failed');
+      // Poll for completion
+      let videoUrl = null;
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+
+        const statusResponse = await axios.get(
+          `https://api.cloud.higgsfield.ai/v1/video/${jobId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${HIGGSFIELD_API_KEY}`
+            }
+          }
+        );
+
+        const status = statusResponse.data.status;
+        console.log(`Step ${step.step} status:`, status);
+
+        if (status === 'completed' || status === 'COMPLETED') {
+          videoUrl = statusResponse.data.video_url || statusResponse.data.output?.url;
+          break;
+        } else if (status === 'failed' || status === 'FAILED' || status === 'ERROR') {
+          throw new Error(`Video generation failed for step ${step.step}`);
+        }
       }
+
+      if (!videoUrl) throw new Error(`Timeout waiting for step ${step.step}`);
+      videoUrls.push({ ...step, videoUrl });
     }
 
-    if (!videoUrl) {
-      return res.status(500).json({ success: false, error: 'Video took too long to generate' });
-    }
-
-    res.json({ success: true, videoUrl, script });
+    console.log('All videos generated:', videoUrls.length);
+    res.json({ success: true, steps: videoUrls });
 
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ success: false, error: 'Something went wrong' });
+    console.error('Error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, error: error.message || 'Something went wrong' });
   }
 });
 
