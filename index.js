@@ -65,12 +65,16 @@ app.post('/generate', async function(req, res) {
       console.log('Step ' + step.step + ': generating image...');
 
       const imageSubmit = await axios.post(
-       'https://platform.higgsfield.ai/kling-video/v2.1/pro/image-to-video',
-        { prompt: step.visual },
+        'https://platform.higgsfield.ai/black-forest-labs/flux-1.1-pro',
+        {
+          prompt: step.visual,
+          width: 1280,
+          height: 720
+        },
         { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
 
-      console.log('Image submit response:', JSON.stringify(imageSubmit.data));
+      console.log('Image submit response: ' + JSON.stringify(imageSubmit.data));
       const imageResult = await pollStatus(imageSubmit.data.request_id);
       const imageUrl = imageResult.images[0].url;
       console.log('Image ready: ' + imageUrl);
@@ -78,15 +82,16 @@ app.post('/generate', async function(req, res) {
       console.log('Step ' + step.step + ': generating video...');
 
       const videoSubmit = await axios.post(
-        'https://platform.higgsfield.ai/bytedance/seedance/v1/pro/image-to-video',
+        'https://platform.higgsfield.ai/kling-video/v2.1/pro/image-to-video',
         {
           image_url: imageUrl,
-          prompt: 'Smooth cinematic camera movement, instructional style, clear and well lit'
+          prompt: 'Smooth cinematic camera movement, instructional style, clear and well lit',
+          duration: 5
         },
         { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
 
-      console.log('Video submit response:', JSON.stringify(videoSubmit.data));
+      console.log('Video submit response: ' + JSON.stringify(videoSubmit.data));
       const videoResult = await pollStatus(videoSubmit.data.request_id);
       const videoUrl = videoResult.video.url;
       console.log('Video ready: ' + videoUrl);
