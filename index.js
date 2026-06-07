@@ -69,7 +69,6 @@ app.post('/generate', async function(req, res) {
         {
           prompt: step.visual,
           aspect_ratio: '16:9',
-          resolution: '720p'
         },
         { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
