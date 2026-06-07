@@ -65,7 +65,7 @@ app.post('/generate', async function(req, res) {
       console.log('Step ' + step.step + ': generating image...');
 
       const imageSubmit = await axios.post(
-        'https://platform.higgsfield.ai/reve/text-to-image',
+       'https://platform.higgsfield.ai/kling-video/v2.1/pro/image-to-video',
         { prompt: step.visual },
         { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
