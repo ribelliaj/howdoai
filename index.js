@@ -65,7 +65,7 @@ app.post('/generate', async function(req, res) {
       console.log('Step ' + step.step + ': generating image...');
 
       const imageSubmit = await axios.post(
-        'https://platform.higgsfield.ai/higgsfield-ai/soul/standard',
+        'https://platform.higgsfield.ai/reve/text-to-image',
         { prompt: step.visual },
         { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
