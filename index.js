@@ -1,13 +1,14 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const { HiggsfieldClient } = require('@higgsfield/client');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const HF_API_KEY = process.env.HF_API_KEY;
+const HF_API_SECRET = process.env.HF_API_SECRET;
 
 app.get('/', function(req, res) {
   res.send('howdo.ai API is running!');
@@ -17,11 +18,8 @@ app.post('/generate', async function(req, res) {
   const question = req.body.question;
 
   try {
-    const higgsfield = new HiggsfieldClient({
-      apiKey: process.env.HIGGSFIELD_API_KEY,
-      apiSecret: process.env.HIGGSFIELD_API_SECRET
-    });
-
+    console.log('KEY CHECK - HF_API_KEY exists:', !!HF_API_KEY);
+    console.log('KEY CHECK - HF_API_SECRET exists:', !!HF_API_SECRET);
     console.log('Generating script for: ' + question);
 
     const scriptResponse = await axios.post(
@@ -49,27 +47,60 @@ app.post('/generate', async function(req, res) {
     const steps = JSON.parse(rawText);
     console.log('Steps generated: ' + steps.length);
 
+    const credentials = HF_API_KEY + ':' + HF_API_SECRET;
+    const encoded = Buffer.from(credentials).toString('base64');
     const videoUrls = [];
 
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
       console.log('Generating video for step ' + step.step);
 
-      const jobSet = await higgsfield.generate('/v1/text2video/dop', {
-        prompt: step.visual + '. Cinematic, high quality, instructional style.',
-        aspect_ratio: '16:9',
-        duration: 4
-      }, {
-        withPolling: true
-      });
+      const submitResponse = await axios.post(
+        'https://platform.higgsfield.ai/v1/text2video/dop',
+        {
+          prompt: step.visual + '. Cinematic, high quality, instructional style.',
+          aspect_ratio: '16:9',
+          duration: 4
+        },
+        {
+          headers: {
+            'Authorization': 'Key ' + HF_API_KEY + ':' + HF_API_SECRET,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-      if (!jobSet.isCompleted) {
-        throw new Error('Video failed for step ' + step.step);
+      console.log('Submit response:', JSON.stringify(submitResponse.data));
+
+      const requestId = submitResponse.data.request_id || submitResponse.data.id;
+
+      let videoUrl = null;
+      for (let j = 0; j < 30; j++) {
+        await new Promise(r => setTimeout(r, 5000));
+
+        const statusResponse = await axios.get(
+          'https://platform.higgsfield.ai/requests/' + requestId + '/status',
+          {
+            headers: {
+              'Authorization': 'Key ' + HF_API_KEY + ':' + HF_API_SECRET
+            }
+          }
+        );
+
+        const status = statusResponse.data.status;
+        console.log('Step ' + step.step + ' status: ' + status);
+
+        if (status === 'completed') {
+          videoUrl = statusResponse.data.video.url;
+          break;
+        } else if (status === 'failed' || status === 'nsfw') {
+          throw new Error('Video failed for step ' + step.step);
+        }
       }
 
-      const videoUrl = jobSet.jobs[0].results.raw.url;
-      console.log('Step ' + step.step + ' done: ' + videoUrl);
+      if (!videoUrl) throw new Error('Timeout for step ' + step.step);
 
+      console.log('Step ' + step.step + ' done: ' + videoUrl);
       videoUrls.push({
         step: step.step,
         title: step.title,
@@ -81,7 +112,7 @@ app.post('/generate', async function(req, res) {
     res.json({ success: true, steps: videoUrls });
 
   } catch (err) {
-    console.error('Error: ' + err.message);
+    console.error('Error: ' + (err.response ? JSON.stringify(err.response.data) : err.message));
     res.status(500).json({ success: false, error: err.message });
   }
 });
