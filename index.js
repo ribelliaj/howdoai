@@ -16,25 +16,27 @@ const higgsfield = new HiggsfieldClient({
   apiSecret: HIGGSFIELD_API_SECRET
 });
 
-app.get('/', (req, res) => {
+app.get('/', function(req, res) {
   res.send('howdo.ai API is running!');
 });
 
-app.post('/generate', async (req, res) => {
-  const { question } = req.body;
+app.post('/generate', async function(req, res) {
+  const question = req.body.question;
 
   try {
-    console.log('Step 1: Generating script for:', question);
+    console.log('Generating script for: ' + question);
 
     const scriptResponse = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-sonnet-4-6',
         max_tokens: 1500,
-        messages: [{
-          role: 'user',
-          content: 'You are a helpful instructor. For the question "' + question + '", create a step-by-step instructional guide with exactly 4 steps. Return ONLY a JSON array with no extra text, no markdown, no backticks. Format: [{"step":1,"title":"title","description":"desc","visual":"cinematic video scene description"},{"step":2,"title":"title","description":"desc","visual":"cinematic video scene description"},{"step":3,"title":"title","description":"desc","visual":"cinematic video scene description"},{"step":4,"title":"title","description":"desc","visual":"cinematic video scene description"}]'
-        }]
+        messages: [
+          {
+            role: 'user',
+            content: 'For the question: ' + question + ' - create 4 instructional steps. Return ONLY valid JSON array, no markdown: [{"step":1,"title":"string","description":"string","visual":"cinematic scene description for video"},{"step":2,"title":"string","description":"string","visual":"cinematic scene description for video"},{"step":3,"title":"string","description":"string","visual":"cinematic scene description for video"},{"step":4,"title":"string","description":"string","visual":"cinematic scene description for video"}]'
+          }
+        ]
       },
       {
         headers: {
@@ -47,13 +49,13 @@ app.post('/generate', async (req, res) => {
 
     const rawText = scriptResponse.data.content[0].text.trim();
     const steps = JSON.parse(rawText);
-    console.log('Steps generated:', steps.length);
+    console.log('Steps generated: ' + steps.length);
 
-    console.log('Step 2: Generating videos...');
     const videoUrls = [];
 
-    for (const step of steps) {
-      console.log('Generating video for step', step.step);
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      console.log('Generating video for step ' + step.step);
 
       const jobSet = await higgsfield.generate('/v1/text2video/dop', {
         prompt: step.visual + '. Cinematic, high quality, instructional style.',
@@ -64,19 +66,25 @@ app.post('/generate', async (req, res) => {
       });
 
       if (!jobSet.isCompleted) {
-        throw new Error('Video generation failed for step ' + step.step);
+        throw new Error('Video failed for step ' + step.step);
       }
 
       const videoUrl = jobSet.jobs[0].results.raw.url;
-      console.log('Step', step.step, 'done:', videoUrl);
-      videoUrls.push({ step: step.step, title: step.title, description: step.description, videoUrl: videoUrl });
+      console.log('Step ' + step.step + ' done: ' + videoUrl);
+
+      videoUrls.push({
+        step: step.step,
+        title: step.title,
+        description: step.description,
+        videoUrl: videoUrl
+      });
     }
 
     res.json({ success: true, steps: videoUrls });
 
-  } catch (error) {
-    console.error('Error:', error.response ? error.response.data : error.message);
-    res.status(500).json({ success: false, error: error.message });
+  } catch (err) {
+    console.error('Error: ' + err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
