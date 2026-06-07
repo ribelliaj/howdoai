@@ -8,13 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const HIGGSFIELD_API_KEY = process.env.HIGGSFIELD_API_KEY;
-const HIGGSFIELD_API_SECRET = process.env.HIGGSFIELD_API_SECRET;
-
-const higgsfield = new HiggsfieldClient({
-  apiKey: HIGGSFIELD_API_KEY,
-  apiSecret: HIGGSFIELD_API_SECRET
-});
+const higgsfield = new HiggsfieldClient();
 
 app.get('/', function(req, res) {
   res.send('howdo.ai API is running!');
