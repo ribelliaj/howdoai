@@ -8,7 +8,6 @@ app.use(cors());
 app.use(express.json());
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const higgsfield = new HiggsfieldClient();
 
 app.get('/', function(req, res) {
   res.send('howdo.ai API is running!');
@@ -18,6 +17,11 @@ app.post('/generate', async function(req, res) {
   const question = req.body.question;
 
   try {
+    const higgsfield = new HiggsfieldClient({
+      apiKey: process.env.HIGGSFIELD_API_KEY,
+      apiSecret: process.env.HIGGSFIELD_API_SECRET
+    });
+
     console.log('Generating script for: ' + question);
 
     const scriptResponse = await axios.post(
