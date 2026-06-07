@@ -9,6 +9,22 @@ app.use(express.json());
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const HF_API_KEY = process.env.HF_API_KEY;
 const HF_API_SECRET = process.env.HF_API_SECRET;
+const HF_AUTH = 'Key ' + HF_API_KEY + ':' + HF_API_SECRET;
+
+async function pollStatus(requestId) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 5000));
+    const res = await axios.get(
+      'https://platform.higgsfield.ai/requests/' + requestId + '/status',
+      { headers: { 'Authorization': HF_AUTH } }
+    );
+    const status = res.data.status;
+    console.log('Status: ' + status);
+    if (status === 'completed') return res.data;
+    if (status === 'failed' || status === 'nsfw') throw new Error('Generation failed: ' + status);
+  }
+  throw new Error('Timeout waiting for generation');
+}
 
 app.get('/', function(req, res) {
   res.send('howdo.ai API is running!');
@@ -18,8 +34,6 @@ app.post('/generate', async function(req, res) {
   const question = req.body.question;
 
   try {
-    console.log('KEY CHECK - HF_API_KEY exists:', !!HF_API_KEY);
-    console.log('KEY CHECK - HF_API_SECRET exists:', !!HF_API_SECRET);
     console.log('Generating script for: ' + question);
 
     const scriptResponse = await axios.post(
@@ -27,12 +41,10 @@ app.post('/generate', async function(req, res) {
       {
         model: 'claude-sonnet-4-6',
         max_tokens: 1500,
-        messages: [
-          {
-            role: 'user',
-            content: 'For the question: ' + question + ' - create 4 instructional steps. Return ONLY valid JSON array, no markdown: [{"step":1,"title":"string","description":"string","visual":"cinematic scene description for video"},{"step":2,"title":"string","description":"string","visual":"cinematic scene description for video"},{"step":3,"title":"string","description":"string","visual":"cinematic scene description for video"},{"step":4,"title":"string","description":"string","visual":"cinematic scene description for video"}]'
-          }
-        ]
+        messages: [{
+          role: 'user',
+          content: 'For the question: ' + question + ' - create 4 instructional steps. Return ONLY valid JSON array, no markdown: [{"step":1,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"},{"step":2,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"},{"step":3,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"},{"step":4,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"}]'
+        }]
       },
       {
         headers: {
@@ -43,64 +55,45 @@ app.post('/generate', async function(req, res) {
       }
     );
 
-    const rawText = scriptResponse.data.content[0].text.trim();
-    const steps = JSON.parse(rawText);
+    const steps = JSON.parse(scriptResponse.data.content[0].text.trim());
     console.log('Steps generated: ' + steps.length);
 
-    const credentials = HF_API_KEY + ':' + HF_API_SECRET;
-    const encoded = Buffer.from(credentials).toString('base64');
     const videoUrls = [];
 
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
-      console.log('Generating video for step ' + step.step);
+      console.log('Step ' + step.step + ': generating image...');
 
-      const submitResponse = await axios.post(
-        'https://platform.higgsfield.ai/v1/text2video/dop',
+      const imageSubmit = await axios.post(
+        'https://platform.higgsfield.ai/higgsfield-ai/soul/standard',
         {
-          prompt: step.visual + '. Cinematic, high quality, instructional style.',
+          prompt: step.visual,
           aspect_ratio: '16:9',
-          duration: 4
+          resolution: '720p'
         },
-        {
-          headers: {
-            'Authorization': 'Key ' + HF_API_KEY + ':' + HF_API_SECRET,
-            'Content-Type': 'application/json'
-          }
-        }
+        { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
 
-      console.log('Submit response:', JSON.stringify(submitResponse.data));
+      const imageResult = await pollStatus(imageSubmit.data.request_id);
+      const imageUrl = imageResult.images[0].url;
+      console.log('Image ready: ' + imageUrl);
 
-      const requestId = submitResponse.data.request_id || submitResponse.data.id;
+      console.log('Step ' + step.step + ': generating video...');
 
-      let videoUrl = null;
-      for (let j = 0; j < 30; j++) {
-        await new Promise(r => setTimeout(r, 5000));
+      const videoSubmit = await axios.post(
+        'https://platform.higgsfield.ai/higgsfield-ai/dop/preview',
+        {
+          image_url: imageUrl,
+          prompt: 'Smooth cinematic camera movement, instructional style, clear and well lit',
+          duration: 4
+        },
+        { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
+      );
 
-        const statusResponse = await axios.get(
-          'https://platform.higgsfield.ai/requests/' + requestId + '/status',
-          {
-            headers: {
-              'Authorization': 'Key ' + HF_API_KEY + ':' + HF_API_SECRET
-            }
-          }
-        );
+      const videoResult = await pollStatus(videoSubmit.data.request_id);
+      const videoUrl = videoResult.video.url;
+      console.log('Video ready: ' + videoUrl);
 
-        const status = statusResponse.data.status;
-        console.log('Step ' + step.step + ' status: ' + status);
-
-        if (status === 'completed') {
-          videoUrl = statusResponse.data.video.url;
-          break;
-        } else if (status === 'failed' || status === 'nsfw') {
-          throw new Error('Video failed for step ' + step.step);
-        }
-      }
-
-      if (!videoUrl) throw new Error('Timeout for step ' + step.step);
-
-      console.log('Step ' + step.step + ' done: ' + videoUrl);
       videoUrls.push({
         step: step.step,
         title: step.title,
