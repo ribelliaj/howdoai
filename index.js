@@ -12,7 +12,7 @@ const HF_API_SECRET = process.env.HF_API_SECRET;
 const HF_AUTH = 'Key ' + HF_API_KEY + ':' + HF_API_SECRET;
 
 async function pollStatus(requestId) {
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 40; i++) {
     await new Promise(r => setTimeout(r, 5000));
     const res = await axios.get(
       'https://platform.higgsfield.ai/requests/' + requestId + '/status',
@@ -23,7 +23,7 @@ async function pollStatus(requestId) {
     if (status === 'completed') return res.data;
     if (status === 'failed' || status === 'nsfw') throw new Error('Generation failed: ' + status);
   }
-  throw new Error('Timeout waiting for generation');
+  throw new Error('Timeout');
 }
 
 app.get('/', function(req, res) {
@@ -43,7 +43,7 @@ app.post('/generate', async function(req, res) {
         max_tokens: 1500,
         messages: [{
           role: 'user',
-          content: 'For the question: ' + question + ' - create 4 instructional steps. Return ONLY valid JSON array, no markdown: [{"step":1,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"},{"step":2,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"},{"step":3,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"},{"step":4,"title":"string","description":"string","visual":"detailed image description showing this step being performed, photorealistic"}]'
+          content: 'For the question: ' + question + ' - create 4 instructional steps. Return ONLY valid JSON array, no markdown: [{"step":1,"title":"string","description":"string","visual":"photorealistic image showing this step being performed, detailed scene description"},{"step":2,"title":"string","description":"string","visual":"photorealistic image showing this step being performed, detailed scene description"},{"step":3,"title":"string","description":"string","visual":"photorealistic image showing this step being performed, detailed scene description"},{"step":4,"title":"string","description":"string","visual":"photorealistic image showing this step being performed, detailed scene description"}]'
         }]
       },
       {
@@ -66,13 +66,11 @@ app.post('/generate', async function(req, res) {
 
       const imageSubmit = await axios.post(
         'https://platform.higgsfield.ai/higgsfield-ai/soul/standard',
-        {
-          prompt: step.visual,
-          aspect_ratio: '16:9',
-        },
+        { prompt: step.visual },
         { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
 
+      console.log('Image submit response:', JSON.stringify(imageSubmit.data));
       const imageResult = await pollStatus(imageSubmit.data.request_id);
       const imageUrl = imageResult.images[0].url;
       console.log('Image ready: ' + imageUrl);
@@ -80,15 +78,15 @@ app.post('/generate', async function(req, res) {
       console.log('Step ' + step.step + ': generating video...');
 
       const videoSubmit = await axios.post(
-        'https://platform.higgsfield.ai/higgsfield-ai/dop/preview',
+        'https://platform.higgsfield.ai/bytedance/seedance/v1/pro/image-to-video',
         {
           image_url: imageUrl,
-          prompt: 'Smooth cinematic camera movement, instructional style, clear and well lit',
-          duration: 4
+          prompt: 'Smooth cinematic camera movement, instructional style, clear and well lit'
         },
         { headers: { 'Authorization': HF_AUTH, 'Content-Type': 'application/json' } }
       );
 
+      console.log('Video submit response:', JSON.stringify(videoSubmit.data));
       const videoResult = await pollStatus(videoSubmit.data.request_id);
       const videoUrl = videoResult.video.url;
       console.log('Video ready: ' + videoUrl);
